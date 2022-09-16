@@ -802,7 +802,7 @@ class TagTaTQAReader(object):
         
         if counter_operator_class is None:
             self.skip_count += 1
-            print("skipping no op", counter_derivation, counter_facts, original_derivation, answer)
+            # print("skipping no op", counter_derivation, counter_facts, original_derivation, answer)
             return None
 
         table_cell_tokens, table_ids, table_tags, table_if_tags, table_cell_number_value, table_cell_index, _ = \
@@ -946,8 +946,9 @@ class TagTaTQAReader(object):
                     if instance is not None:
                         instances.append(instance)
                 except RuntimeError as e :
-                    print(f"run time error:{e}" )
-                    print(question_answer["uid"])
+                    pass
+                    #print(f"run time error:{e}" )
+                    #print(question_answer["uid"])
                 #except KeyError:
                 #    key_error_count += 1
                 #    print(question_answer["uid"])
@@ -1072,7 +1073,7 @@ class TagTaTQATestReader(object):
         
         table_cell_tokens, table_ids, table_tags, table_if_tags, table_cell_number_value, table_cell_index, table_mapping_content = \
                             table_tokenize(table, self.tokenizer, original_answer_mapping, if_mapping)
-        # comment this part
+
         for i in range(len(table)):
             for j in range(len(table[i])):
                 if table[i][j] == '' or table[i][j] == 'N/A' or table[i][j] == 'n/a':

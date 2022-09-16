@@ -26,11 +26,11 @@ parser.add_argument("--op_mode", type=int, default=0)
 parser.add_argument("--finbert_model", type=str, default='dataset_tagop/finbert')
 parser.add_argument("--ablation_mode", type=int, default=0)
 parser.add_argument("--test_data_dir", type=str, default="tag_op/data/roberta")
-parser.add_argument("--cross_attn_layer", type=int, default=3) # depth of matching block
-parser.add_argument("--ca_with_self", type=int, default=1) # use self MHA in matching block
-parser.add_argument("--share_param", type=int, default=1) # enable parameter sharing in matching block
-parser.add_argument("--do_finetune", type=int, default=1) # fine tuning from --model_finetune_from?
-parser.add_argument("--model_finetune_from", type=str, default='model_orig/checkpoint_best.pt') # TAGOP checkpoint
+parser.add_argument("--cross_attn_layer", type=int, default=0) # depth of matching block
+parser.add_argument("--ca_with_self", type=int, default=1) # use self MHA in matching block? 1 true 0 false
+parser.add_argument("--share_param", type=int, default=1) # enable parameter sharing in matching block? 1 true 0 false
+parser.add_argument("--do_finetune", type=int, default=0) # fine tuning from --model_finetune_from? 1 true 0 false.
+parser.add_argument("--model_finetune_from", type=str, default='') # if do_finetune, input the path to checkpoint
 
 args = parser.parse_args()
 if args.ablation_mode != 0:
@@ -102,7 +102,7 @@ def main():
         operator_classes = len(operators),
         if_operator_classes = len(if_operators),
         scale_classes = 5,
-        num_head = 8,
+        num_head = 8, # MHA head number
         cross_attn_layer = args.cross_attn_layer,
         ca_with_self=args.ca_with_self,
         share_param=args.share_param,
@@ -121,7 +121,7 @@ def main():
             if k not in state_dict:
                 print('Missing', k)
                 state_dict[k] = v
-                
+        # missing params should only be matching block.
         network.load_state_dict(state_dict)
         del state_dict
     else:
@@ -135,7 +135,7 @@ def main():
     first = True
     for epoch in range(1, args.max_epoch + 1):
         model.reset()
-        
+        # if want to test at begging...
         # model.predict(dev_itr)
         # metrics = model.get_metrics(logger)
         # model.avg_reset()

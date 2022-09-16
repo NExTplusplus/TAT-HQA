@@ -65,7 +65,7 @@ class TagopFineTuningModel():
         if state_dict is not None:
             print("Load Model!")
             self.network.load_state_dict(state_dict["state"])
-        self.mnetwork = nn.DataParallel(self.network) if args.gpu_num > 1 else self.network
+        self.mnetwork = nn.DataParallel(self.network) if args.gpu_num > 1 else self.network # parallel is currently not supported
 
         self.total_param = sum([p.nelement() for p in self.network.parameters() if p.requires_grad])
         no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']

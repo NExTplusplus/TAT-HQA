@@ -128,11 +128,11 @@ class TagopModel(nn.Module):
         self.operator_predictor = FFNLayer(hidden_size, hidden_size, operator_classes, dropout_prob)
         # scale predictor
         self.scale_predictor = FFNLayer(3 * hidden_size, hidden_size, scale_classes, dropout_prob)
-        # tag predictor: two-class classification
+        # tag predictor
         self.tag_predictor = FFNLayer(hidden_size, hidden_size, 2, dropout_prob)
-        # if tag predictor: two-class classification
+        # if tag predictor
         self.if_tag_predictor = FFNLayer(hidden_size, hidden_size, 2, dropout_prob)
-        # order predictor: three-class classification
+        # order predictor
         self.order_predictor = FFNLayer(hidden_size, hidden_size, 2, dropout_prob)
         
         self.share_param = share_param
@@ -176,10 +176,10 @@ class TagopModel(nn.Module):
     question_if_part_attention_mask, shape[bsz, 512], attention mask for assumption only, 0 or 1
     paragraph_mask, shape[bsz, 512], attention mask for paragraph and question including assumption 0 or 1
     table_mask, shape[bsz, 512], attention mask for table, 0 or 1
-    token_type_ids, shape[bsz, 512, 3].
+
     if_tag_labels: [bsz, 512] 1 for tokens used for if tagging and 0 for others
     tag_labels: [bsz, 512] 1 for tokens in the answer and 0 for others
-    paragraph_index, shape[bsz, 512] 0 for non-paragraph, non-question tokens and index starting from 1 for paragraph and question tokens.
+    paragraph_index, shape[bsz, 512] 0 for non-paragraph, non-question tokens and index starting from 1 for paragraph and question tokens, including assumption.
     table_cell_index, shape[bsz, 512] similar to paragraph index.
     operator_labels: [bsz, 10]
     if_operator_labels: [bsz, 9]
@@ -193,10 +193,10 @@ class TagopModel(nn.Module):
     """
     def forward(self,
                 input_ids: torch.LongTensor,  # [cls, q, if, sep, t, sep, p]
-                qtp_attention_mask: torch.LongTensor,
-                question_if_part_attention_mask: torch.LongTensor,
-                paragraph_mask: torch.LongTensor,
-                table_mask: torch.LongTensor,
+                qtp_attention_mask: torch.LongTensor, #[cls, q, 0, sep, 0, sep, p]
+                question_if_part_attention_mask: torch.LongTensor, # [cls, 0, if, sep, 0, sep, 0]
+                paragraph_mask: torch.LongTensor, # [cls, q, if, sep, 0, sep, p]
+                table_mask: torch.LongTensor, # [cls, 0, 0, sep, t, sep, 0]
 
                 token_type_ids: torch.LongTensor,
 
@@ -211,8 +211,8 @@ class TagopModel(nn.Module):
                 scale_labels: torch.LongTensor,
                 number_order_labels: torch.LongTensor,
                 
-                counter_arithmetic_mask: torch.LongTensor, # the input tensor is not used here, re-calculated in the process.
-                original_mask: torch.LongTensor, # the input is tensor not used here, re-calculated in the process.
+                counter_arithmetic_mask: torch.LongTensor, # the input tensor is not used here, re-calculated later
+                original_mask: torch.LongTensor, # the input is tensor not used here, re-calculated later
                 
                 gold_answers: List,
                 paragraph_tokens: List[List[str]],
@@ -238,7 +238,8 @@ class TagopModel(nn.Module):
         # is a counter arithmetic question? (bsize, )
         arithmetic_mask = (operator_labels == 0) | (operator_labels == 1) | (operator_labels == 2) | (operator_labels == 5)
         arithmetic_mask = ~arithmetic_mask
-        counter_arithmetic_mask = arithmetic_mask.int()
+        counter_mask = question_if_part_attention_mask.sum(-1).bool()
+        counter_arithmetic_mask = (arithmetic_mask & counter_mask).int()
 
         cls_output = outputs[0][:, 0, :]
         operator_prediction = self.operator_predictor(cls_output)
@@ -349,6 +350,9 @@ class TagopModel(nn.Module):
 
         output_dict = {}
 
+
+        # ** Loss Calculation ****
+        # if training for both TAT-QA and TAT-HQA, ablate the if operator loss and if tag loss for TAT-QA with original mask.
         operator_prediction_loss = self.operator_criterion(operator_prediction, operator_labels).mean()
         scale_prediction_loss = self.scale_criterion(scale_prediction, scale_labels).mean()
         tag_prediction_loss = self.NLLLoss(total_tag_prediction.transpose(1,2), tag_labels.long()).sum(-1).mean()
@@ -361,15 +365,15 @@ class TagopModel(nn.Module):
 
         # for counter arithmetic problems only, use counter_arithmetic_mask
         if_operator_prediction_loss = self.if_operator_criterion(if_operator_prediction, if_operator_labels)
-        if_operator_prediction_loss = util.replace_masked_values(if_operator_prediction_loss, counter_arithmetic_mask, 0).mean()
+        if_operator_prediction_loss = util.replace_masked_values(if_operator_prediction_loss, counter_arithmetic_mask, 0)
         if_tag_prediction_loss = self.NLLLoss(total_if_tag_prediction.transpose(1,2), if_tag_labels.long())
-        if_tag_prediction_loss = util.replace_masked_values(if_tag_prediction_loss, counter_arithmetic_mask.unsqueeze(-1), 0).sum(-1).mean()
-        
+        if_tag_prediction_loss = util.replace_masked_values(if_tag_prediction_loss, counter_arithmetic_mask.unsqueeze(-1), 0).sum(-1)
+        if_losses = if_operator_prediction_loss + if_tag_prediction_loss
+        if_losses = util.replace_masked_values(if_losses, counter_arithmetic_mask, 0).mean()
 
         output_dict["top2o_loss"] = top_2_order_prediction_loss.item()
-        output_dict["loss"] =  if_operator_prediction_loss + if_tag_prediction_loss \
-                              + tag_prediction_loss + top_2_order_prediction_loss + \
-                              scale_prediction_loss + operator_prediction_loss
+        output_dict["loss"] =  if_losses + tag_prediction_loss + top_2_order_prediction_loss + \
+                               scale_prediction_loss + operator_prediction_loss
         return output_dict
 
 
@@ -422,8 +426,9 @@ class TagopModel(nn.Module):
         
         arithmetic_mask = (predicted_operator_class == 0) | (predicted_operator_class == 1) | (predicted_operator_class == 2) | (predicted_operator_class == 5)
         arithmetic_mask = ~arithmetic_mask
-        counter_arithmetic_mask = arithmetic_mask.int()
-
+        counter_mask = question_if_part_attention_mask.sum(-1).bool()
+        counter_arithmetic_mask = (arithmetic_mask & counter_mask).int()
+        
         sequence_output = util.replace_masked_values(outputs[0], qtp_attention_mask.unsqueeze(-1), 0)
         if_sequence_output = util.replace_masked_values(outputs[0], question_if_part_attention_mask.unsqueeze(-1), 0)
 
@@ -684,7 +689,7 @@ class TagopModel(nn.Module):
                         get_numbers_from_reduce_sequence(table_cell_tag_prediction[bsz], table_cell_numbers[bsz])
                     selected_numbers = paragraph_selected_numbers + table_selected_numbers
                     
-                    if True: # must be a counter arithmetic question, must change number. if do not change number, set false
+                    if counter_arithmetic_mask[bsz]: # must be a counter arithmetic question, must change number. if do not change number, set false
                         new_number = question_top_1_number[bsz]
                         to_cover_number = tp_top_1_number[bsz]
                         target_fact = to_cover_number
@@ -721,7 +726,7 @@ class TagopModel(nn.Module):
                         if np.isnan(operand_one) or np.isnan(operand_two):
                             answer = ""
                         else:
-                            if True: # must be a counter arithmetic question, must change number. if do not change number, set false
+                            if counter_arithmetic_mask[bsz]: # must be a counter arithmetic question, must change number. if do not change number, set false
                                 new_number = question_top_1_number[bsz]
                                 to_cover_number = tp_top_1_number[bsz]
                                 target_fact = to_cover_number

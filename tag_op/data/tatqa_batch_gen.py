@@ -181,7 +181,7 @@ class TaTQATestBatchGen(object):
             question_id = item["question_id"]
             paragraph_mapping_content = item["paragraph_mapping_content"]
             table_mapping_content = item["table_mapping_content"]
-            counter_arithmetic_mask = torch.tensor(item["is_counter_arithmetic"])
+            counter_arithmetic_mask = torch.tensor(item["is_counter_arithmetic"]) # re-calculated in forward() with the predicted operator.
             original_mask = torch.tensor(item["is_original"])
             
             all_data.append((input_ids, qtp_attention_mask,

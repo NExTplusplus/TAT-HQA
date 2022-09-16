@@ -29,7 +29,7 @@ parser.add_argument("--ablation_mode", type=int, default=0)
 parser.add_argument("--encoder", type=str, default='roberta')
 parser.add_argument("--test_data_dir", type=str, default="tag_op/data/")
 parser.add_argument("--finbert_model", type=str, default='cached_models/finbert') # the path to the pretrained finbert model
-parser.add_argument("--cross_attn_layer", type=int, default=3) # depth of matching block
+parser.add_argument("--cross_attn_layer", type=int, default=0) # depth of matching block
 parser.add_argument("--ca_with_self", type=int, default=1) # 0 or 1, apply self MHA in matching block?
 parser.add_argument("--share_param", type=int, default=1) # 0 or 1, enable parameter sharing in matching block?
 parser.add_argument("--result_save_file_name", type=str, default='answer.json') # result file name
@@ -51,7 +51,6 @@ logger = create_logger("Tagop Training", log_file=os.path.join(args.save_dir, ar
 pprint(args)
 set_environment(args.cuda)
 
-args.test_data_dir = args.test_data_dir + "{}".format(args.encoder)
 def main():
     dev_itr = TaTQATestBatchGen(args, data_mode="dev", encoder=args.encoder)
     if args.encoder == 'roberta':
@@ -98,20 +97,28 @@ def main():
         op_mode = args.op_mode,
         ablation_mode = args.ablation_mode,
     )
-    print("Loading test model from", args.model_path)
+    print("Loading model from", args.model_path)
     state_dict = torch.load(os.path.join(args.model_path,"checkpoint_best.pt"))
     network.load_state_dict(state_dict)
 
+    model = TagopPredictModel(args, network)
     print("*** Evaluation Result ***")
     model.reset()
     model.avg_reset()
     pred_answer = model.predict(dev_itr)
+    pred_answer = answer_format(pred_answer)
     answer_file = os.path.join(args.save_dir, args.result_save_file_name.replace('.json', '_dev.json'))
-    print('Writing test answer to', answer_file)
+    print('Writing dev answer to', answer_file)
     with open(answer_file, 'w') as f:
         json.dump(pred_answer, f)
-
     model.get_metrics(logger)
-    
+
+
+def answer_format(pred_answer):
+    pred_answer_format = {}
+    for uid, line in pred_answer.items():
+        pred_answer_format[uid] = [line["answer"], line["scale"]]
+    return pred_answer_format
+
 if __name__ == "__main__":
     main()
