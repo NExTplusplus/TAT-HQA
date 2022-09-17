@@ -3,28 +3,27 @@ Learning to Imagine: Integrating Counterfactual Thinking in Neural Discrete Reas
 
 This repositary contains the **TAT-HQA** dataset and the code for ACL 2022 paper, view [PDF](https://aclanthology.org/2022.acl-long.5.pdf).
 
-You can download our [TAT-HQA dataset](https://github.com/NExTplusplus/TAT-HQA/tree/master/dataset_raw).
-
 # Dataset 
 
 The hypothetical questions in TAT-HQA are created from the factual questions of [TAT-QA](https://github.com/NExTplusplus/TAT-QA). 
-The mixed TAT-QA and TAT-HQA data is stored in [dataset_raw](https://github.com/NExTplusplus/TAT-HQA/tree/master/dataset_raw), where the corresponding factual question of each hypothetcial question is specified. The data files are organized by tables and a list of following passages, with a list of questions under each table. Refer to the website for detailed description on the data format. 
+
+[dataset_raw](https://github.com/NExTplusplus/TAT-HQA/tree/master/dataset_raw) contains a mix of TAT-QA and TAT-HQA data, where TAT-HQA is annotated with `counterfactual` in the answer_type and the corresponding factual question is specified in `order`. 
+The data files are organized by tables and a list of following passages, with a list of questions under each table. Refer to the website for detailed description of the data format. 
 
 The questions contain the following keys, 
 - `uid`: the unique question id.
 - `order`: the order in the question list under the table and passages. 
 - `question`: a string
 - `answer`: a list of strings. The model is expected to generate all the answers. 
-- 'derivation': for arithmetic questions, an equation of the answer calculation process. 
+- `derivation`: for arithmetic questions, an equation of the answer calculation process. 
 - `answer_type`: 4 types, span, multi-span, arithmetic or count. 
 - `answer_from`: 3 types, table, text or table-text. 
 - `rel_paragraph`: the order(s) of the relevant passage(s).
 - `req_comparison`: True or False.
 - `scale`: the model is also expected to predict a correct scale ('', thousand, million, billion, or percent) for each question. If the scale prediction is incorrect, the answer is evaluated as incorrect. 
 - `rel_question (for TAT-HQA)`: the order of the corresponding factual question. Usually, it is the previous question. 
-- `scale`: the model is also expected to predict a correct scale ('', thousand, million, billion, or percent) for each question. If the scale prediction is incorrect, the answer is incorrect. 
 
-For our implementation of the paper method, we pre-process dataset_raw to generate some extra_fields. The `facts` and `mapping` are generated in the same way as TAT-QA (used for training the TagOP baseline). Apart from these, we extract the assumption substring from the hypothetical question (`question_if_part`), and we heuristically generate the `if_op`(SWAP, ADD, MINUS, DOUBLE, INCREASE_PERC, etc.) and `if_tagging` (the operand of if_op) for the Learning-to-imagine module. The preocessed data is stored in [dataset_extra_field] and splitted by TAT-QA and TAT-HQA, saved in `orig` and `counter`. 
+For our implementation of the paper method, we pre-process dataset_raw to generate some extra_fields. The `facts` and `mapping` are generated in the same way as TAT-QA (used for training the TagOP baseline). Apart from these, we extract the assumption substring from the hypothetical question (`question_if_part`), and we heuristically generate the `if_op`(SWAP, ADD, MINUS, DOUBLE, INCREASE_PERC, etc.) and `if_tagging` (the operands of if_op) for the Learning-to-Imagine module. The preocessed data is stored in [dataset_extra_field] and splitted by TAT-QA and TAT-HQA, saved in `orig` and `counter`. 
 
 
 ## Requirements
@@ -54,7 +53,7 @@ To evaluate the performance on TAT-QA, run
 ```bash
 CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd) python tag_op/predictor.py --data_dir tag_op/data/orig --test_data_dir tag_op/data/orig --save_dir tag_op/model_orig --eval_batch_size 8 --model_path tag_op/model_orig --encoder roberta --roberta_model roberta.large
 ```
-The predicted answer file is saved at `tag_op/model_orig/answer_dev.json`. The result will be on the validation set. 
+The predicted answer file for the validation set is saved at `tag_op/model_orig/answer_dev.json`. 
 
 Fine-tune TAT-HQA on with the L2I module by setting --do_finetune, --model_finetune_from tag_op/model_orig and --cross_attn_layer 3
 
@@ -72,8 +71,14 @@ CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd) python tag_op/predictor.py 
 To use the evaluation script `evaluate.py`, try running
 
 ```bash
-python evaluate.py dataset_extra_field/tatqa_and_hqa_field_dev.json tag_op/model_counter_ft_from_orig/answer_dev.json 0
+python evaluate.py dataset_extra_field/counter/tatqa_and_hqa_field_dev.json tag_op/model_counter_ft_from_orig/answer_dev.json 0
 ```
+the 1st argument is the gold data path, and the 2nd argument is the prediction file path. 
+
+
+### Checkpoint
+
+We provide a trained checkpoint which can be downloaded [here](). 
 
 ## Citation 
 ```bash
