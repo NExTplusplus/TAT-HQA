@@ -79,8 +79,8 @@ Question Answering (HQA) Benchmark on a Hybrid of Tabular and Textual Content in
                 <ul>
                     <li> <b>Download a copy of the dataset from our</b> <a href="https://https://github.com/NExTplusplus/TAT-HQA" target="_blank">Github Repo</a>. Please refer to a detailed dataset file discription in the Repo. </li>
                     <li> The training and validation data of a mixture of TAT-QA and TAT-HQA is stored in <ins>dataset_raw</ins> with the following format. The data format is nearly identical to TAT-QA, with one additional key for hypothetical questions "<b>rel_question</b>" to mark the corresponding original question under the same table. </li>
-                    <li> To implement the paper method, i.e. the Learning-to-Imagine module, we generate some extra fields for TAT-HQA, such as the operator and the operands regarding the assumption. The data with extra fields is stored in dataset_extra_field, where TAT-QA and TAT-HQA are splitted and stored in two folders.  </li>
-                    <li> The testing data of TAT-HQA is stored in dataset_test_hqa/tatqa_and_hqa_dataset_dev.json. This jsonfile contains no answer and is used for prediction to the leaderboard. </li>
+                    <li> To implement the paper method, i.e. the Learning-to-Imagine module, we generate some extra fields for TAT-HQA, such as the operator and the operands regarding the assumption. The data with extra fields is stored in <ins>dataset_extra_field</ins>, where TAT-QA and TAT-HQA are splitted and stored in two folders.  </li>
+                    <li> The testing data of TAT-HQA is stored in <ins>dataset_test_hqa/tathqa_dataset_dev.json</ins>. This json file contains no answer and is used for prediction to the leaderboard. </li>
                 </ul>
 
 <pre>
@@ -103,12 +103,12 @@ Question Answering (HQA) Benchmark on a Hybrid of Tabular and Textual Content in
   },
   "paragraphs": [                                                        
     {
-      "uid": "f4ac7069-10a2-47e9-995c-3903293b3d47",                    
+      "uid": "76573d23233ebdfc3c89609c6372e951",                    
       "order": 1,                                                        
-      "text": "Sales by Contract Type: Substantially all of             
-       our contracts are fixed-price type contracts.
-       Sales included in Other contract types represent cost
-       plus and time and material type contracts."
+      "text": "The most significant impacts of Hilli LLC VIE's 
+               operations on our consolidated statements of income and 
+               consolidated statements of cash flows, as of December 31,
+               2019 and 2018, are as follows: ..."
     },
     ...
   ],
@@ -196,7 +196,7 @@ Question Answering (HQA) Benchmark on a Hybrid of Tabular and Textual Content in
             <div class="container">
                 <h3>Submission</h3>
                 <p>
-                To evaluate your models, we have also made available the evaluation script we will use for official evaluation,
+                To evaluate your models, we have also made available the official evaluation script,
                 To run the evaluation, use
                 </p>
                 <pre>python evaluate.py gold_data_path.json prediction_result_path.json 0</pre>
