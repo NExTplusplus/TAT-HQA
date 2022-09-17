@@ -16,7 +16,7 @@ The questions contain the following keys,
 - `question`: a question string.
 - `answer`: a list of answer strings. The model is expected to predict all the answers. 
 - `derivation`: for arithmetic questions, an equation of the answer calculation process. 
-- `answer_type`: 5 types, span, multi-span, arithmetic, count or arithmetic. 
+- `answer_type`: 5 types, span, multi-span, arithmetic, count or counterfactual. 
 - `answer_from`: 3 types, table, text or table-text. 
 - `rel_paragraph`: the order(s) of the relevant passage(s).
 - `req_comparison`: True or False, whether the arithmetic question requires comparison. 
