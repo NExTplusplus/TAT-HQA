@@ -115,7 +115,7 @@ def main():
 
     if args.do_finetune:
         print("Fine Tuning model from", args.model_finetune_from)
-        state_dict = torch.load(args.model_finetune_from)
+        state_dict = torch.load(os.path.join(args.model_finetune_from,"checkpoint_best.pt"))
         
         for k, v in network.state_dict().items():
             if k not in state_dict:
