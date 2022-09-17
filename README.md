@@ -22,7 +22,6 @@ The questions contain the following keys,
 - `req_comparison`: True or False.
 - `scale`: the model is also expected to predict a correct scale ('', thousand, million, billion, or percent) for each question. If the scale prediction is incorrect, the answer is evaluated as incorrect. 
 - `rel_question (for TAT-HQA)`: the order of the corresponding factual question. Usually, it is the previous question. 
-- `scale`: the model is also expected to predict a correct scale ('', thousand, million, billion, or percent) for each question. If the scale prediction is incorrect, the answer is incorrect. 
 
 For our implementation of the paper method, we pre-process dataset_raw to generate some extra_fields. The `facts` and `mapping` are generated in the same way as TAT-QA (used for training the TagOP baseline). Apart from these, we extract the assumption substring from the hypothetical question (`question_if_part`), and we heuristically generate the `if_op`(SWAP, ADD, MINUS, DOUBLE, INCREASE_PERC, etc.) and `if_tagging` (the operands of if_op) for the Learning-to-Imagine module. The preocessed data is stored in [dataset_extra_field] and splitted by TAT-QA and TAT-HQA, saved in `orig` and `counter`. 
 
