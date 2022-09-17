@@ -8,7 +8,7 @@ This repositary contains the **TAT-HQA** dataset and the code for ACL 2022 paper
 The hypothetical questions in TAT-HQA are created from the factual questions of [TAT-QA](https://github.com/NExTplusplus/TAT-QA). 
 
 [dataset_raw](https://github.com/NExTplusplus/TAT-HQA/tree/main/dataset_raw) contains a mixture of TAT-QA and TAT-HQA data, where TAT-HQA is annotated with `counterfactual` in the `answer_type` and the corresponding original TAT-QA question is recorded in `rel_question`. 
-Similar to TAT-QA, the data files are organized by tables and a list of following passages, with a list of questions under each table. Refer to our [website]() for detailed description of the data format. 
+Similar to TAT-QA, the data files are organized by tables and a list of following passages, with a list of questions under each table. Refer to our [website](https://nextplusplus.github.io/TAT-HQA/) for detailed description of the data format. 
 
 The questions contain the following keys, 
 - `uid`: the unique question id.
