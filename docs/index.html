@@ -78,54 +78,67 @@ Question Answering (HQA) Benchmark on a Hybrid of Tabular and Textual Content in
                 <h3>Getting Started</h3>
                 <ul>
                     <li> <b>Download a copy of the dataset from our</b> <a href="https://https://github.com/NExTplusplus/TAT-HQA" target="_blank">Github Repo</a>. Please refer to a detailed dataset file discription in the Repo. </li>
-                    <li> The data format is quite similar to TAT-QA, with one additional key for hypothetical questions <b>rel_question</b> indicating the order of the corresponding original question. </li>
+                    <li> The training and validation data of a mixture of TAT-QA and TAT-HQA is stored in <ins>dataset_raw</ins> with the following format. The data format is nearly identical to TAT-QA, with one additional key for hypothetical questions "<b>rel_question</b>" to mark the corresponding original question under the same table. </li>
+                    <li> To implement the paper method, i.e. the Learning-to-Imagine module, we generate some extra fields for TAT-HQA, such as the operator and the operands regarding the assumption. The data with extra fields is stored in dataset_extra_field, where TAT-QA and TAT-HQA are splitted and stored in two folders.  </li>
+                    <li> The testing data of TAT-HQA is stored in dataset_test_hqa/tatqa_and_hqa_dataset_dev.json. This jsonfile contains no answer and is used for prediction to the leaderboard. </li>
                 </ul>
 
 <pre>
 {
-  "table": {                                                            <em class="comment"># The tabular data in a hybrid context</em>
-    "uid": "3ffd9053-a45d-491c-957a-1b2fa0af0570",                      <em class="comment"># The unique id of a table</em>
-    "table": [                                                          <em class="comment"># The table content which is 2d-array</em>
+  "table": {                                                          
+    "uid": "a3e9cad512b8d3ff0cd6e50774007eeb",                        
+    "table": [                                                         
       [
-        "",
+        "(In thousands of $)",
         "2019",
         "2018",
-        "2017"
       ],
       [
-        "Fixed Price",
-        "$  1,452.4",
-        "$  1,146.2",
-        "$  1,036.9"
+        "Net Debt Receipts",
+        "$  243,513",
+        "$   30,300",
       ],
       ...
     ]
   },
-  "paragraphs": [                                                        <em class="comment"># The textual data in a hybrid context comprising at least two associated paragraphs to the table</em>
+  "paragraphs": [                                                        
     {
-      "uid": "f4ac7069-10a2-47e9-995c-3903293b3d47",                     <em class="comment"># The unique id of a paragraph</em>
-      "order": 1,                                                        <em class="comment"># The order of the paragraph in all associated paragraphs, starting from 1</em>
-      "text": "Sales by Contract Type: Substantially all of              <em class="comment"># The content of the paragraph</em>
+      "uid": "f4ac7069-10a2-47e9-995c-3903293b3d47",                    
+      "order": 1,                                                        
+      "text": "Sales by Contract Type: Substantially all of             
        our contracts are fixed-price type contracts.
        Sales included in Other contract types represent cost
        plus and time and material type contracts."
     },
     ...
   ],
-  "questions": [                                                         <em class="comment"># The questions associated to the hybrid context</em>
+  "questions": [                                         <em class="comment"># Examples of 1) an original question and 2) a hypothetical question. </em>                                        
     {
-      "uid": "eb787966-fa02-401f-bfaf-ccabf3828b23",                     <em class="comment"># The unique id of a question</em>
-      "order": 2,                                                        <em class="comment"># The order of the question in all questions, starting from 1</em>
-      "question": "What is the change in Other in 2019 from 2018?",      <em class="comment"># The question itself</em>
-      "answer": -12.6,                                                   <em class="comment"># The ground-truth answer</em>
-      "derivation": "44.1 - 56.7",                                       <em class="comment"># The derivation that can be executed to arrive at the ground-truth answer</em>
-      "answer_type": "arithmetic",                                       <em class="comment"># The answer type including `span`, `spans`, `arithmetic` and `counting`.</em>
-      "answer_from": "table-text",                                       <em class="comment"># The source of the answer including `table`, `table` and `table-text`</em>
-      "rel_paragraphs": [                                                <em class="comment"># The orders of the paragraphs that are relied to infer the answer if any.</em>
-        "2"
+      "uid": "b68356a11ee8d39571d44b087b1558c7",                                
+      "order": 1,                                                        
+      "question": "What was the change in net debt receipts between 2018 and 2019?",     
+      "answer": 129,454,                                                  
+      "derivation": "129,454 - 0",                                      
+      "answer_type": "arithmetic",                       <em class="comment"># The answer type including `span`, `spans`, `arithmetic` and `counting`.</em>
+      "answer_from": "table",                            <em class="comment"># The source of the answer including `table`, `table` and `table-text`</em>
+      "rel_paragraphs": [                                                
       ],
-      "req_comparison": false,                                           <em class="comment"># A flag indicating if `comparison/sorting` is needed to answer the question whose answer is a single span or multiple spans</em>
-      "scale": "million"                                                 <em class="comment"># The scale of the answer including `None`, `thousand`, `million`, `billion` and `percent`</em>
+      "req_comparison": false,                                           
+      "scale": "thousand"                                <em class="comment"># The scale of the answer including `None`, `thousand`, `million`, `billion` and `percent`</em>
+    }
+    {
+      "uid": "e982f2be72b37a222d61fe645df00168",                     
+      "order": 2,                                                        
+      "question": "What would be the change in net debt receipts between 2018 and 2019 if the amount in 2018 was 100,250 thousand instead?",     
+      "answer": 29,204,                                                  
+      "derivation": "129,454 - 100,250",                                      
+      "answer_type": "arithmetic",                                      
+      "answer_from": "table",                                           
+      "rel_paragraphs": [                                                
+      ],
+      "req_comparison": false,                                           
+      "scale": "thousand"                                                
+      "rel_question": 1                                  <em class="comment"># The order of the corresponding original question under the same table. </em>
     }
   ]
 }
@@ -186,7 +199,7 @@ Question Answering (HQA) Benchmark on a Hybrid of Tabular and Textual Content in
                 To evaluate your models, we have also made available the evaluation script we will use for official evaluation,
                 To run the evaluation, use
                 </p>
-                <pre>python tatqa_eval.py --gold_path=:path_to_dev --pred_path=:path_to_predictions</pre>
+                <pre>python evaluate.py gold_data_path.json prediction_result_path.json 0</pre>
 
                 <h4>Predictions Format</h4>
                 <p> The predictions file in JSON format contains a dictionary with question ids as keys and the predictions as values
@@ -209,9 +222,7 @@ Question Answering (HQA) Benchmark on a Hybrid of Tabular and Textual Content in
   ...
 }
 </pre>
-                <p>We also provide a <a href="https://github.com/NExTplusplus/tat-qa/blob/master/sample_prediction.json" target="_blank" >sample prediction file </a> (on Dev) for your reference.</p>
-
-                <pre>python tatqa_eval.py --gold_path=dataset_raw/tatqa_dataset_dev.json --pred_path=sample_prediction.json</pre>
+                <p>The format of <a href="https://github.com/NExTplusplus/tat-qa/blob/master/sample_prediction.json" target="_blank" >sample prediction file </a> of TAT-QA is also suitable for TAT-HQA.</p>
                 <h4>Submission</h4>
                 <p>
                     Please email the prediction file of the test set with the following information to us:
