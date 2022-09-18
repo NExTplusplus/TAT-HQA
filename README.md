@@ -38,11 +38,11 @@ Our cuda version is 10.2, cuda driver version 440.33.01. We use one 32GB GPU.
 Process the training/validation data for both TAT-QA and TAT-HQA. 
 
 ```bash
-PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/tag_op python tag_op/prepare_dataset.py --input_path ./dataset_extra_field/[counter/orig] --output_dir tag_op/data/[counter/orig] --encoder roberta --mode [train/dev]
+PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/tag_op python tag_op/prepare_dataset.py --input_path ./dataset_extra_field/[counter/orig] --output_dir tag_op/data/[counter/orig] --encoder roberta --mode [train/dev] --roberta_model roberta.large
 ```
 Process the test data of TAT-HQA. 
 ```bash
-PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/tag_op python tag_op/prepare_dataset.py --input_path ./dataset_test_hqa --output_dir tag_op/data/test --encoder roberta --mode dev --data_format tathqa_dataset_{}.json
+PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/tag_op python tag_op/prepare_dataset.py --input_path ./dataset_test_hqa --output_dir tag_op/data/test --encoder roberta --mode dev --data_format tathqa_dataset_{}.json --roberta_model roberta.large
 ```
 
 ### Training
