@@ -66,7 +66,7 @@ Question Answering (HQA) Benchmark on a Hybrid of Tabular and Textual Content in
                 <p>
                     The following is an example of TAT-HQA along with its original TAT-QA example. The left box shows a factual tabular and textual context, where a <ins>normal question</ins> (the upper middle box) is asked. Based on the normal question, a <ins>hypothetical question</ins> is asked with an additional assumption <ins>"if the amount in 2019 was $132,935 instead"</ins>, leading to a different answer (-30,000 vs. -29,253). The blue dashed boxes indicate the position that the assumption affects. The QA model is supposed to imagine a counterfactual context (the right dashed box) and reason over this imagined situation.  
                 </p>
-                <img src="assets/example_hqa.pdf" alt="TAT-HQA Sample" width="100%" >
+                <img src="assets/example_hqa.png" alt="TAT-HQA Sample" width="100%" >
                     <br>
 
                 For more information, please read our ACL 2022 paper  <a href="https://aclanthology.org/2022.acl-long.5.pdf" target="_blank">[PDF]</a>.
@@ -119,7 +119,7 @@ Question Answering (HQA) Benchmark on a Hybrid of Tabular and Textual Content in
       "question": "What was the change in net debt receipts between 2018 and 2019?",     
       "answer": 129,454,                                                  
       "derivation": "129,454 - 0",                                      
-      "answer_type": "arithmetic",                       <em class="comment"># The answer type including `span`, `spans`, `arithmetic` and `counting`.</em>
+      "answer_type": "arithmetic",                       <em class="comment"># The answer type including `span`, `spans`, `arithmetic`, `counting` and `counterfactual`.</em>
       "answer_from": "table",                            <em class="comment"># The source of the answer including `table`, `table` and `table-text`</em>
       "rel_paragraphs": [                                                
       ],
@@ -177,7 +177,7 @@ Question Answering (HQA) Benchmark on a Hybrid of Tabular and Textual Content in
                         </tr>
                         
                         <tr>
-                            <td>4</td>
+                            <td>1</td>
                             <td><a href="https://github.com/NExTplusplus/tat-hqa" target="_blank">TagOp - L2I</a></td>
                             <td>NExT</td>
                             <td>---</td>
