@@ -36,10 +36,10 @@ Our cuda version is 10.2, cuda driver version 440.33.01. We use one 32GB GPU.
 
 ### Preprocess Dataset
 
-Process the training/validation data for both TAT-QA and TAT-HQA. 
+Process the training/validation data by specifying 'counter' for TAT-HQA, 'orig' for TAT-QA, and 'both' for a mix of them.  
 
 ```bash
-PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/tag_op python tag_op/prepare_dataset.py --input_path ./dataset_extra_field/[counter/orig] --output_dir tag_op/data/[counter/orig] --encoder roberta --mode [train/dev] --roberta_model roberta.large
+PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/tag_op python tag_op/prepare_dataset.py --input_path ./dataset_extra_field/[counter/orig/both] --output_dir tag_op/data/[counter/orig/both] --encoder roberta --mode [train/dev] --roberta_model roberta.large
 ```
 Process the test data of TAT-HQA. 
 ```bash
@@ -48,37 +48,38 @@ PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/tag_op python tag_op/prepare_dataset.py --i
 
 ### Training
 
-First, we obtain a checkpoint for TAT-QA by running the following command. Set --roberta_model as the path to the roberta model. 
+First, we obtain a base model trained on a mix of TAT-QA&HQA data by running the following command. Set --roberta_model as the path to the roberta model. 
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/tag_op python tag_op/trainer.py --data_dir tag_op/data/orig --save_dir tag_op/model_orig --batch_size 48 --eval_batch_size 8 --max_epoch 50 --warmup 0.06 --optimizer adam --learning_rate 5e-4  --weight_decay 5e-5 --seed 123 --gradient_accumulation_steps 4 --bert_learning_rate 1.5e-5 --bert_weight_decay 0.01 --log_per_updates 100 --eps 1e-6  --encoder roberta --test_data_dir tag_op/data/orig/ --roberta_model roberta.large --cross_attn_layer 0 --do_finetune 0
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/tag_op python tag_op/trainer.py --data_dir tag_op/data/both --save_dir tag_op/model_L2I --batch_size 32 --eval_batch_size 32 --max_epoch 50 --warmup 0.06 --optimizer adam --learning_rate 5e-4  --weight_decay 5e-5 --seed 123 --gradient_accumulation_steps 4 --bert_learning_rate 1.5e-5 --bert_weight_decay 0.01 --log_per_updates 100 --eps 1e-6  --encoder roberta --test_data_dir tag_op/data/both/ --roberta_model roberta.large --cross_attn_layer 0 --do_finetune 0
+```
+This checkpoint of `model_L2I` be obtained from [this link](https://drive.google.com/file/d/1VzYy1a_PbOUnqZZLNW58jpWTFL8PRc3B/view?usp=sharing)
+
+To evaluate the dev performance on TAT-QA or TAT-HQA, run
+
+```bash
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd) python tag_op/predictor.py --data_dir tag_op/data/[counter/orig] --test_data_dir tag_op/data/[counter/orig] --save_dir tag_op/model_L2I --eval_batch_size 32 --model_path tag_op/model_L2I --encoder roberta --roberta_model roberta.large --cross_attn_layer 0
 ```
 
-To evaluate the dev performance on TAT-QA, run
+The predicted answer file for the validation set is saved at `tag_op/model_L2I/answer_dev.json`. 
+
+Fine-tune TAT-HQA on with the L2I module by setting --do_finetune, --model_finetune_from tag_op/model_L2I and --cross_attn_layer 3
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd) python tag_op/predictor.py --data_dir tag_op/data/orig --test_data_dir tag_op/data/orig --save_dir tag_op/model_orig --eval_batch_size 8 --model_path tag_op/model_orig --encoder roberta --roberta_model roberta.large --cross_attn_layer 0
-```
-
-The predicted answer file for the validation set is saved at `tag_op/model_orig/answer_dev.json`. 
-
-Fine-tune TAT-HQA on with the L2I module by setting --do_finetune, --model_finetune_from tag_op/model_orig and --cross_attn_layer 3
-
-```bash
-CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/tag_op python tag_op/trainer.py --data_dir tag_op/data/counter --save_dir tag_op/model_counter_ft_from_orig --batch_size 32 --eval_batch_size 8 --max_epoch 50 --warmup 0.06 --optimizer adam --learning_rate 5e-5  --weight_decay 5e-5 --seed 123 --gradient_accumulation_steps 4 --bert_learning_rate 1.5e-6 --bert_weight_decay 0.01 --log_per_updates 100 --eps 1e-6  --encoder roberta --test_data_dir tag_op/data/counter/ --roberta_model roberta.large --cross_attn_layer 3 --do_finetune 1 --model_finetune_from tag_op/model_orig
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/tag_op python tag_op/trainer.py --data_dir tag_op/data/counter --save_dir tag_op/model_counter_ft_from_L2I --batch_size 32 --eval_batch_size 8 --max_epoch 50 --warmup 0.06 --optimizer adam --learning_rate 5e-5  --weight_decay 5e-5 --seed 123 --gradient_accumulation_steps 4 --bert_learning_rate 1.5e-6 --bert_weight_decay 0.01 --log_per_updates 100 --eps 1e-6  --encoder roberta --test_data_dir tag_op/data/counter/ --roberta_model roberta.large --cross_attn_layer 3 --do_finetune 1 --model_finetune_from tag_op/model_L2I
 ```
 
 ### Testing
 
-To test the performance on the dev set for TAT-HQA, run the following command and obtain the prediction file at `tag_op/model_counter_ft_from_orig/answer_dev.json`. 
+To test the performance on the dev set for TAT-HQA, run the following command and obtain the prediction file at `tag_op/model_counter_ft_from_L2I/answer_dev.json`. 
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd) python tag_op/predictor.py --data_dir tag_op/data/counter --test_data_dir tag_op/data/counter --save_dir tag_op/model_counter_ft_from_orig --eval_batch_size 8 --model_path tag_op/model_counter_ft_from_orig --encoder roberta --roberta_model roberta.large --cross_attn_layer 3
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd) python tag_op/predictor.py --data_dir tag_op/data/counter --test_data_dir tag_op/data/counter --save_dir tag_op/model_counter_ft_from_L2I --eval_batch_size 32 --model_path tag_op/model_counter_ft_from_L2I --encoder roberta --roberta_model roberta.large --cross_attn_layer 3
 ```
 
-To obtain the test result on TAT-HQA, run the following command and obtain the prediction file at `tag_op/model_counter_ft_from_orig/answer_dev.json`. 
+To obtain the test result on TAT-HQA, run the following command and obtain the prediction file at `tag_op/model_counter_ft_from_L2I/answer_dev.json`. 
 ```bash
-CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd) python tag_op/predictor.py --data_dir tag_op/data/test --test_data_dir tag_op/data/test --save_dir tag_op/model_counter_ft_from_orig --eval_batch_size 8 --model_path tag_op/model_counter_ft_from_orig --encoder roberta --roberta_model roberta.large --cross_attn_layer 3
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd) python tag_op/predictor.py --data_dir tag_op/data/test --test_data_dir tag_op/data/test --save_dir tag_op/model_counter_ft_from_L2I --eval_batch_size 32 --model_path tag_op/model_counter_ft_from_L2I --encoder roberta --roberta_model roberta.large --cross_attn_layer 3
 ```
 
 
@@ -86,7 +87,7 @@ CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd) python tag_op/predictor.py 
 To use the evaluation script `evaluate.py` to evaluate the validation result of TAT-HQA, try running
 
 ```bash
-python evaluate.py dataset_extra_field/counter/tatqa_and_hqa_field_dev.json tag_op/model_counter_ft_from_orig/answer_dev.json 0
+python evaluate.py dataset_extra_field/counter/tatqa_and_hqa_field_dev.json tag_op/model_counter_ft_from_L2I/answer_dev.json 0
 ```
 the 1st argument is the gold data path, and the 2nd argument is the prediction file path. 
 
