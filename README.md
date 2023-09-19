@@ -1,6 +1,6 @@
 Learning to Imagine: Integrating Counterfactual Thinking in Neural Discrete Reasoning
 ====================
-**2022-12-13 Update:** This repo is currently under construction and will be ready soon. 
+**2023-09-19 Update:** Uploaded trained checkpoints. 
 
 This repositary contains the **TAT-HQA** dataset and the code for ACL 2022 paper, view [PDF](https://aclanthology.org/2022.acl-long.5.pdf).
 
@@ -26,7 +26,7 @@ The questions contain the following keys,
 
 For our implementation of the paper method, we pre-process dataset_raw to generate some extra_fields. The `facts` and `mapping` are generated in the same way as TAT-QA (used for training the TagOP baseline). Apart from these, we extract the assumption substring from the hypothetical question (`question_if_part`), and we heuristically generate the `if_op` (SWAP, ADD, MINUS, DOUBLE, INCREASE_PERC, etc.) and `if_tagging` (the operands of if_op) for the Learning-to-Imagine module. The preocessed data is stored in [dataset_extra_field] and splitted by TAT-QA and TAT-HQA, saved in `orig` and `counter`. 
 
-The test data of TAT-HQA is stored in `dataset_test_hqa/tathqa_dataset_dev.json`. 
+The test data of TAT-HQA is stored in `dataset_test_hqa/tathqa_dataset_dev.json`.
 
 ## Requirements
 The paper method is built upon `TagOp` ([Paper](https://aclanthology.org/2021.acl-long.254.pdf)) and further fine-tune on TAT-HQA from the TagOp checkpoint. Please follow the process in [TAT-QA](https://github.com/NExTplusplus/TAT-QA) to create the conda environment and download roberta.large. 
@@ -48,14 +48,14 @@ PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/tag_op python tag_op/prepare_dataset.py --i
 
 ### Training
 
-First, we obtain a base model trained on a mix of TAT-QA&HQA data by running the following command. Set --roberta_model as the path to the roberta model. 
+First, we obtain a base TagOp model trained on a mix of TAT-QA&HQA data by running the following command. Set --roberta_model as the path to the roberta model. 
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/tag_op python tag_op/trainer.py --data_dir tag_op/data/both --save_dir tag_op/model_L2I --batch_size 32 --eval_batch_size 32 --max_epoch 50 --warmup 0.06 --optimizer adam --learning_rate 5e-4  --weight_decay 5e-5 --seed 123 --gradient_accumulation_steps 4 --bert_learning_rate 1.5e-5 --bert_weight_decay 0.01 --log_per_updates 100 --eps 1e-6  --encoder roberta --test_data_dir tag_op/data/both/ --roberta_model roberta.large --cross_attn_layer 0 --do_finetune 0
 ```
-This checkpoint of `model_L2I` be obtained from [this link](https://drive.google.com/file/d/1VzYy1a_PbOUnqZZLNW58jpWTFL8PRc3B/view?usp=sharing)
+This checkpoint of `model_L2I` can be obtained from [this link](https://drive.google.com/file/d/1VzYy1a_PbOUnqZZLNW58jpWTFL8PRc3B/view?usp=sharing)
 
-To evaluate the dev performance on TAT-QA or TAT-HQA, run
+To inference the validation set results on TAT-QA or TAT-HQA on this model, run
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd) python tag_op/predictor.py --data_dir tag_op/data/[counter/orig] --test_data_dir tag_op/data/[counter/orig] --save_dir tag_op/model_L2I --eval_batch_size 32 --model_path tag_op/model_L2I --encoder roberta --roberta_model roberta.large --cross_attn_layer 0
@@ -63,24 +63,24 @@ CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd) python tag_op/predictor.py 
 
 The predicted answer file for the validation set is saved at `tag_op/model_L2I/answer_dev.json`. 
 
-Fine-tune TAT-HQA on with the L2I module by setting --do_finetune, --model_finetune_from tag_op/model_L2I and --cross_attn_layer 3
+Then, we fine-tune TAT-HQA on the base TagOp model using the Learning-to-Imagine module, by setting --do_finetune, --model_finetune_from tag_op/model_L2I, and --cross_attn_layer 3. 
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/tag_op python tag_op/trainer.py --data_dir tag_op/data/counter --save_dir tag_op/model_counter_ft_from_L2I --batch_size 32 --eval_batch_size 32 --max_epoch 50 --warmup 0.06 --optimizer adam --learning_rate 5e-5  --weight_decay 5e-5 --seed 123 --gradient_accumulation_steps 4 --bert_learning_rate 1.5e-6 --bert_weight_decay 0.01 --log_per_updates 100 --eps 1e-6  --encoder roberta --test_data_dir tag_op/data/counter/ --roberta_model roberta.large --cross_attn_layer 3 --do_finetune 1 --model_finetune_from tag_op/model_L2I
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd):$(pwd)/tag_op python tag_op/trainer.py --data_dir tag_op/data/counter --save_dir tag_op/model_ft_hqa_on_L2I_50e --batch_size 32 --eval_batch_size 32 --max_epoch 50 --warmup 0.06 --optimizer adam --learning_rate 5e-5  --weight_decay 5e-5 --seed 123 --gradient_accumulation_steps 4 --bert_learning_rate 1.5e-6 --bert_weight_decay 0.01 --log_per_updates 100 --eps 1e-6  --encoder roberta --test_data_dir tag_op/data/counter/ --roberta_model roberta.large --cross_attn_layer 3 --do_finetune 1 --model_finetune_from tag_op/model_L2I
 ```
-This checkpoint of `model_counter_ft_from_L2I` be obtained from [this link]()
+This checkpoint of `model_ft_hqa_on_L2I_50e` can be obtained from [this link](https://drive.google.com/file/d/1P1Eugok72rS4z_U1PhL0wZIaTV3XuBMl/view?usp=sharing)
 
 ### Testing
 
-To test the performance on the dev set for TAT-HQA, run the following command and obtain the prediction file at `tag_op/model_counter_ft_from_L2I/answer_dev.json`. 
+To get the performance on the validation set of TAT-HQA, run the following command and obtain the prediction file at `tag_op/model_ft_hqa_on_L2I_50e/answer_dev.json`. 
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd) python tag_op/predictor.py --data_dir tag_op/data/counter --test_data_dir tag_op/data/counter --save_dir tag_op/model_counter_ft_from_L2I --eval_batch_size 32 --model_path tag_op/model_counter_ft_from_L2I --encoder roberta --roberta_model roberta.large --cross_attn_layer 3
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd) python tag_op/predictor.py --data_dir tag_op/data/counter --test_data_dir tag_op/data/counter --save_dir tag_op/model_ft_hqa_on_L2I_50e --eval_batch_size 32 --model_path tag_op/model_ft_hqa_on_L2I_50e --encoder roberta --roberta_model roberta.large --cross_attn_layer 3
 ```
 
-To obtain the test result on TAT-HQA, run the following command and obtain the prediction file at `tag_op/model_counter_ft_from_L2I/answer_dev.json`. 
+To obtain the test results on TAT-HQA, run the following command and obtain the prediction file at `tag_op/model_ft_hqa_on_L2I_50e/answer_dev.json`. 
 ```bash
-CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd) python tag_op/predictor.py --data_dir tag_op/data/test --test_data_dir tag_op/data/test --save_dir tag_op/model_counter_ft_from_L2I --eval_batch_size 32 --model_path tag_op/model_counter_ft_from_L2I --encoder roberta --roberta_model roberta.large --cross_attn_layer 3
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd) python tag_op/predictor.py --data_dir tag_op/data/test --test_data_dir tag_op/data/test --save_dir tag_op/model_ft_hqa_on_L2I_50e --eval_batch_size 32 --model_path tag_op/model_ft_hqa_on_L2I_50e --encoder roberta --roberta_model roberta.large --cross_attn_layer 3
 ```
 
 
@@ -88,14 +88,19 @@ CUDA_VISIBLE_DEVICES=0 PYTHONPATH=$PYTHONPATH:$(pwd) python tag_op/predictor.py 
 To use the evaluation script `evaluate.py` to evaluate the validation result of TAT-HQA, try running
 
 ```bash
-python evaluate.py dataset_extra_field/counter/tatqa_and_hqa_field_dev.json tag_op/model_counter_ft_from_L2I/answer_dev.json 0
+python evaluate.py dataset_extra_field/counter/tatqa_and_hqa_field_dev.json tag_op/model_ft_hqa_on_L2I_50e/answer_dev.json 0
 ```
-the 1st argument is the gold data path, and the 2nd argument is the prediction file path. 
+the 1st argument is the gold answer path, and the 2nd argument is the prediction file path. 
 
+The gold answers for the test set of TAT-HQA are not released. Please refer to our [website](https://nextplusplus.github.io/TAT-HQA/) for the leaderboard details. 
 
-## Checkpoint
+## Checkpoint Results
 
-The trained checkpoint will be released very soon! 
+The trained checkpoints are released. If we have the same environment, the performance on TAT-HQA are listed as follows.  
+
+| model name | dev EM | dev F1 | test EM | test F1 | 
+| model_ft_hqa_on_L2I_50e | 55.7 | 56.3 | 55.6 | 56.3 | 
+| model_L2I | 54.7 | 55.3 | 52.6 | 53.2 | 
 
 ## Citation 
 Please kindly add the following citation if you find our work helpful. Thanks!

@@ -499,7 +499,11 @@ def evaluate_json(golden_answers: Dict[str, Any], predicted_answers: Dict[str, A
     # print("----")
     return global_em, global_f1
 
-
+def qcount(tables):
+    qc = 0
+    for tb in tables:
+        qc += len(tb['questions'])
+    return qc
 
 def judge(standardResultFile, userCommitFile, evalStrategy=0):
     """
@@ -510,6 +514,8 @@ def judge(standardResultFile, userCommitFile, evalStrategy=0):
 	"""
     golden_answers = json.load(open(standardResultFile, encoding='utf-8'))
     predicted_answers = json.load(open(userCommitFile, encoding='utf-8'))
+    print('Reading gold answers', standardResultFile, qcnt(golden_answers))
+    print('Reading pred answers', userCommitFile, len(predicted_answers))
     return evaluate_json(golden_answers, predicted_answers)
 
 
