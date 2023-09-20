@@ -4,7 +4,7 @@ Learning to Imagine: Integrating Counterfactual Thinking in Neural Discrete Reas
 
 This repositary contains the **TAT-HQA** dataset and the code for ACL 2022 paper, view [PDF](https://aclanthology.org/2022.acl-long.5.pdf).
 
-# Dataset 
+## Dataset 
 
 The hypothetical questions in TAT-HQA are created from the factual questions of [TAT-QA](https://github.com/NExTplusplus/TAT-QA). 
 
@@ -99,6 +99,7 @@ The gold answers for the test set of TAT-HQA are not released. Please refer to o
 The trained checkpoints are released. If we have the same environment, the performance on TAT-HQA are listed as follows.  
 
 | model name | dev EM | dev F1 | test EM | test F1 | 
+| --- | --- | --- | --- | --- |
 | model_ft_hqa_on_L2I_50e | 55.7 | 56.3 | 55.6 | 56.3 | 
 | model_L2I | 54.7 | 55.3 | 52.6 | 53.2 | 
 
